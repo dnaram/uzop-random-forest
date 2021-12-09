@@ -3,6 +3,7 @@ from scipy.sparse import csr_matrix
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegression
 from utils.TreeWrapper import TreeStruct
+from sklearn.ensemble import RandomForestClassifier
 
 
 class RefinedRandomForest():
