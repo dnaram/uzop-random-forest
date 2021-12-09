@@ -1,9 +1,10 @@
 import numpy as np
+
 from scipy.sparse import csr_matrix
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import LogisticRegression
-from utils.TreeWrapper import TreeStruct
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import Ridge
+from sklearn.svm import LinearSVC
+from utils.TreeWrapper import TreeStruct
 
 
 class RefinedRandomForest():
@@ -124,14 +125,14 @@ class RefinedRandomForest():
             #print('Model size: {} leaves'.format(indicators.shape[1]))
             #self.svr = SVR(C=self.C,fit_intercept=False,epsilon=0.)
             if type(self.rf_) == RandomForestClassifier:
-                self.lr = LogisticRegression(C=self.C,
-                                fit_intercept=False,
-                                solver='lbfgs',
-                                max_iter=100,
-                                multi_class='multinomial', n_jobs=-1)
+                self.lr = LinearSVC(C=self.C, 
+                                fit_intercept=True,
+                                loss='hinge',
+                                penalty='l2',
+                                multi_class='ovr',
+                                max_iter=1000)
             else:
-                self.lr = LinearRegression(
-                                fit_intercept=False, n_jobs=-1)
+                self.lr = Ridge(alpha=1/(2*self.C))
             self.lr.fit(indicators,y)
             if n_pruned < self.n_prunings:
                 self.prune_trees()
