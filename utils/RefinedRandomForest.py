@@ -17,7 +17,7 @@ class RefinedRandomForest():
 
     def leaves(self):
         # store number of leaves per tree and total number of leaves
-        self.n_leaves_ = [tree.leaves.shape[0] for tree in self.trees_]ž
+        self.n_leaves_ = [tree.leaves.shape[0] for tree in self.trees_]
         
         # store cumulative sum of leaves per tree starting from 0
         self.M = np.sum(self.n_leaves_)
