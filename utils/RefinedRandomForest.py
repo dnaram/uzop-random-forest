@@ -122,7 +122,7 @@ class RefinedRandomForest():
             indicators = self.get_indicators(X)
             #print('Model size: {} leaves'.format(indicators.shape[1]))
             #self.svr = SVR(C=self.C,fit_intercept=False,epsilon=0.)
-            if type(rf) == RandomForestClassifier:
+            if type(self.rf_) == RandomForestClassifier:
                 self.lr = LogisticRegression(C=self.C,
                                 fit_intercept=False,
                                 solver='lbfgs',
