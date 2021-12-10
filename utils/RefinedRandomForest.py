@@ -8,12 +8,11 @@ from utils.TreeWrapper import TreeStruct
 
 
 class RefinedRandomForest():
-    def __init__(self, rf, C = 1.0, prune_pct = 0.1, n_prunings = 1, criterion = 'sumnorm'):
+    def __init__(self, rf, C = 1.0, prune_pct = 0.1, n_prunings = 1):
         self.rf_ = rf
         self.C = C
         self.prune_pct = prune_pct
         self.n_prunings = n_prunings
-        self.criterion = criterion
         self.trees_ = [TreeStruct(tree.tree_) for tree in rf.estimators_] # create TreeWrapper around every estimator tree
         self.leaves()
 
@@ -75,20 +74,27 @@ class RefinedRandomForest():
             
         # get coefficient corresponding to each of the leaves in the estimator trees
         coef = self.lr.coef_
-        sibl_coef = coef[:,ind_siblings]
-        sibl_coef[:,ind_siblings < 0] = np.inf # so that it does not happen that leaf is being merged with branch
+        if type(self.rf_) == RandomForestClassifier:
+            sibl_coef = coef[:,ind_siblings]
+            sibl_coef[:,ind_siblings < 0] = np.inf # so that it does not happen that leaf is being merged with branch
+        else:
+            sibl_coef = coef[ind_siblings]
+            sibl_coef[ind_siblings < 0] = np.inf # so that it does not happen that leaf is being merged with branch
         
         # it is possible now to compare coefficients between leaves and its siblings
-        if self.criterion == 'sumnorm':
+        if type(self.rf_) == RandomForestClassifier:
             sum_coef = np.sum(coef**2 + sibl_coef**2,axis=0)
-        elif self.criterion == 'normdiff':
-            sum_coef = np.sum((coef - sibl_coef)**2,axis=0) # = little difference between adjacent leaves. Also gives good results.
+        else:
+            sum_coef = coef**2 - sibl_coef**2
         
         # sorting the difference in coefficients in ascending order by arguments
         ind = np.argsort(sum_coef)
         
         # we want to prune 10% of the least significant leaves
-        n_prunings = np.floor(coef.shape[1] * self.prune_pct).astype(int)
+        if type(self.rf_) == RandomForestClassifier:
+            n_prunings = np.floor(coef.shape[1] * self.prune_pct).astype(int)
+        else:
+            n_prunings = np.floor(len(coef) * self.prune_pct).astype(int)
         
         # let's start pruning
         pruned = 0
@@ -139,7 +145,11 @@ class RefinedRandomForest():
             n_pruned += 1
         for tree_ind, tree in enumerate(self.trees_):
             offset = self.offsets_[tree_ind]
-            tree.value[tree.leaves,0,:] = self.lr.coef_[:,offset:offset + tree.leaves.shape[0]].T
+            if type(self.rf_) == RandomForestClassifier:
+                tree.value[tree.leaves,0,:] = self.lr.coef_[:,offset:offset + tree.leaves.shape[0]].T
+            else:
+                tree.value[tree.leaves,0,:] = self.lr.coef_[offset:offset + tree.leaves.shape[0]].T.reshape(-1,1)
+
 
     def predict_proba(self, X):
         return self.lr.predict_proba(self.get_indicators(X))
